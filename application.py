@@ -1,6 +1,7 @@
 import os
 import time
 from flask import Flask, render_template,sessions,redirect,url_for,flash
+from flask_socketio import SocketIO,send,emit
 from wtforms_fields import *
 from models import  *
 from passlib.hash import pbkdf2_sha256
@@ -15,6 +16,9 @@ app.secret_key='replace later'
 app.config['SQLALCHEMY_DATABASE_URI']='postgres://twfvccgxmrglip:7ac4c07b20f2a6dde7ec808e9373676e8ed841f77d4586a98b04cfc03a7cb56e@ec2-52-72-221-20.compute-1.amazonaws.com:5432/d2iflvdmtg2r94'
 app.config['SQL_ALCHEMY_TRACK_MODIFICATIONS']=False
 db = SQLAlchemy(app)
+
+#initialize FlaskSocketIO
+socketio = SocketIO(app)
 
 #configure Flask Login
 login=LoginManager(app)
@@ -76,13 +80,13 @@ def login():
 #@login_required
 def chat():
 
-    if not current_user.is_authenticated:
-        flash('Please login to Continue','danger')
-        return redirect(url_for('login'))
+    #if not current_user.is_authenticated:
+    #    flash('Please login to Continue','danger')
+    #    return redirect(url_for('login'))
 
 
 
-    return "Chat with me!!"
+    return render_template('chat.html',username=current_user.username);
 
 
 @app.route("/logout", methods=['GET'])
@@ -92,6 +96,14 @@ def logout():
     flash('You have logged out succesfully.','success')
     return redirect(url_for('login'))
 
+@socketio.on('message')
+def message(data):
+    print(f"\n\n{data}\n\n")
+
+    send(data)
+    
+    #emit('some-event', 'this is a custom event message')
 
 if __name__=="__main__":
-    app.run(debug=True)
+    socketio.run(app, debug=True)
+   #app.run(debug=True)
